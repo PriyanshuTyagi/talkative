@@ -87,7 +87,7 @@ const Login = () => {
               h="1.75rem"
               size="xs"
               onClick={handleClick}
-              isDisabled={email === "guest@deLink.com"}
+              isDisabled={email === "guest@example.com"}
             >
               {show ? "Hide" : "Show"}
             </Button>
@@ -113,8 +113,8 @@ const Login = () => {
         style={{ marginTop: "10px" }}
         onClick={() => {
           setUserData({
-            email: "guest@deLink.com",
-            password: "thisISTHE1234PAssGU3st",
+            email: "guest@example.com",
+            password: "1234",
           });
         }}
         isLoading={loading}

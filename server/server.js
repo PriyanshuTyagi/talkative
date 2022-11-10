@@ -31,7 +31,7 @@ if (process.env.NODE_ENV === "production") {
   // First route
   app.get("/", (req, res) => {
     res.status(200).json({
-      message: "Hello from DE-Link Chat App server",
+      message: "Hello from Talk-A-Tive Chat App server",
     });
   });
 }

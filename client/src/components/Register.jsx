@@ -39,9 +39,9 @@ const Register = () => {
     if (pics.type === "image/png") {
       const data = new FormData();
       data.append("file", pics);
-      data.append("upload_preset", "DELinkChatApp");
-      data.append("cloud_name", "dfcaehp0b");
-      fetch("https://api.cloudinary.com/v1_1/dfcaehp0b/image/upload", {
+      data.append("upload_preset", "chat-app");
+      data.append("cloud_name", "dbxvw9yvp");
+      fetch("https://api.cloudinary.com/v1_1/dbxvw9yvp/image/upload", {
         method: "post",
         body: data,
       })

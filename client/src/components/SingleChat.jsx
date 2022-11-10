@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from "react";
+import { ArrowBackIcon } from "@chakra-ui/icons";
+
+// import { ArrowBackIcon } from "@chakra-ui/icons";
+// import {
+//   Box,
+//   FormControl,
+//   IconButton,
+//   Input,
+//   Spinner,
+//   Text,
+//   useToast,
+// } from "@chakra-ui/react";
 import { ChatState } from "../context/ChatProvider";
+import Lottie from "react-lottie";
+
 import {
   Box,
   Text,
@@ -7,39 +21,83 @@ import {
   Divider,
   FormControl,
   Input,
+  useToast,
+  IconButton,
+  Spinner,
 } from "@chakra-ui/react";
 import { IoIosArrowBack } from "react-icons/io";
-import { getSender } from "../config/ChatLogics";
+import { getSender, getSenderFull } from "../config/ChatLogics";
 import ProfileModel from "./ProfileModel";
 import UpdateGroupChatModal from "./UpdateGroupChatModal";
 import Loader from "./Loader";
 import { toast } from "react-toastify";
 import axios from "axios";
 import ScrollableChat from "./ScrollableChat";
+import animationData from "../animations/typing.json";
 // for socket.io
 import io from "socket.io-client";
-const ENDPOINT = "https://react-chat-vars.herokuapp.com";
+const ENDPOINT = "https://talkative.herokuapp.com/";
 var socket, selectedChatCompare;
 
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {
-  const { user, selectedChat, setSelectedChat, notification, setNotification } =
-    ChatState();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState();
   const [loading, setLoading] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [typing, setTyping] = useState();
   const [isTyping, setIsTyping] = useState();
+  const toast = useToast();
+
+   const defaultOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: animationData,
+    rendererSettings: {
+      preserveAspectRatio: "xMidYMid slice",
+    },
+  };
+
+  const { user, selectedChat, setSelectedChat, notification, setNotification } =
+    ChatState();
+
+    const typingHandler = (e) => {
+    setNewMessage(e.target.value);
+
+    if (!socketConnected) return;
+
+    if (!typing) {
+      setTyping(true);
+      socket.emit("typing", selectedChat._id);
+    }
+    let lastTypingTime = new Date().getTime();
+    var timerLength = 3000;
+    setTimeout(() => {
+      var timeNow = new Date().getTime();
+      var timeDiff = timeNow - lastTypingTime;
+      if (timeDiff >= timerLength && typing) {
+        socket.emit("stop typing", selectedChat._id);
+        setTyping(false);
+      }
+    }, timerLength);
+  };
+  useEffect(() => {
+    socket = io(ENDPOINT);
+    socket.emit("setup", user);
+    socket.on("connected", () => setSocketConnected(true));
+    socket.on("typing", () => setIsTyping(true));
+    socket.on("stop typing", () => setIsTyping(false));
+    // eslint-disable-next-line
+  }, []);
 
   const fetchAllMessages = async () => {
     if (!selectedChat) return;
     try {
-      setLoading(true);
       const config = {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       };
+      setLoading(true);
       const { data } = await axios.get(
         `/api/message/${selectedChat._id}`,
         config
@@ -53,6 +111,12 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       return;
     }
   };
+
+  useEffect(() => {
+    fetchAllMessages();
+    selectedChatCompare = selectedChat;
+  }, [selectedChat]);
+
 
   const sendMessage = async (e) => {
     if (e.key === "Enter" && newMessage) {
@@ -111,10 +175,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     socket.on("stop typing", () => setIsTyping(false));
   }, []);
 
-  useEffect(() => {
-    fetchAllMessages();
-    selectedChatCompare = selectedChat;
-  }, [selectedChat]);
+  
 
   console.log(notification);
   useEffect(() => {
@@ -135,27 +196,10 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   useEffect(() => {
     saveNotification();
   }, [notification]);
-  const typingHandler = (e) => {
-    setNewMessage(e.target.value);
-    if (!socketConnected) return;
-    if (!typing) {
-      setTyping(true);
-      socket.emit("typing", selectedChat._id);
-    }
-    let lastTypingTime = new Date().getTime();
-    var timerLength = 3000;
-    setTimeout(() => {
-      var timeNow = new Date().getTime();
-      var timeDiff = timeNow - lastTypingTime;
-      if (timeDiff >= timerLength && typing) {
-        socket.emit("stop typing", selectedChat._id);
-        setTyping(false);
-      }
-    }, timerLength);
-  };
-
+  
   return (
     <>
+    
       {selectedChat ? (
         <>
           <Box
@@ -168,33 +212,28 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             bg="#fff"
             borderRadius="lg"
           >
-            <Box
+            {/* <Box
               d={{ base: "flex", md: "none" }}
               mr="5"
               onClick={() => setSelectedChat("")}
-            >
-              <IoIosArrowBack />
-            </Box>
+            > */}
+              {/* <IoIosArrowBack /> */}
+              <IconButton
+              display={{ base: "flex", md: "none" }}
+              icon={<IoIosArrowBack />}
+              onClick={() => setSelectedChat("")}
+            />
+            {/* </Box> */}
             {!selectedChat.isGroupChat ? (
-              <Text
-                width="100%"
-                d="flex"
-                py="3"
-                alignItems="center"
-                justifyContent={{ base: "space-between" }}
-                fontSize={{ base: "1.5rem", md: "1.75rem" }}
-              >
-                <Box display="flex" flexDir="column" alignItems="flex-start">
-                  {getSender(user.user, selectedChat.users).name}
-
-                  <Box minH="10px">
-                    {isTyping && <Text fontSize="8px">Typing...</Text>}
-                  </Box>
-                </Box>
-
-                <ProfileModel user={getSender(user.user, selectedChat.users)} />
-              </Text>
-            ) : (
+                <>
+                   {getSender(user.user, selectedChat.users).name}
+                  <ProfileModel
+                    user={getSenderFull(user.user, selectedChat.users)}
+                  />
+                </>
+              )  
+              //
+              : (
               <>
                 {selectedChat.chatName.toUpperCase()}
                 <UpdateGroupChatModal
@@ -220,24 +259,38 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 {<ScrollableChat messages={messages} />}
               </div>
             )}
-          </Box>
           <FormControl
             onKeyDown={sendMessage}
             isRequired
-            mt={{ base: "1", md: "3" }}
-            border="1px solid #fff"
-            borderRadius="8px"
+            mt={3}
+            // border="1px solid #fff"
+            // borderRadius="8px"
           >
+            {isTyping ? (
+                <div>
+                  <Lottie
+                    options={defaultOptions}
+                    width={70}
+                    style={{ marginBottom: 15, marginLeft: 0 }}
+                  />
+                </div>
+              ) : (
+                <></>
+              )}
             <Input
               variant="outline"
               bg="#1d1931"
-              h="4rem"
+              // h="2rem"
               color="#fff"
+              margin = "1"
+              // variant="filled"
+              //   bg="#E0E0E0"
               placeholder="Enter a message..."
               onChange={typingHandler}
               value={newMessage}
             />
           </FormControl>
+          </Box>
         </>
       ) : (
         <Box
@@ -249,7 +302,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           color="rgba(255, 255, 255, 0.685)"
         >
           <Heading size="4xl" mb="4">
-            De-Link
+            Talk-A-Tive
           </Heading>
           <Divider />
           <Text fontSize="3xl" px="3">
@@ -259,6 +312,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       )}
     </>
   );
+   
 };
 
 export default SingleChat;

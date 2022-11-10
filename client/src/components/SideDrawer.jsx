@@ -146,7 +146,7 @@ const SideDrawer = () => {
           className="brand"
           color="rgba(255, 255, 255, 0.685)"
         >
-          De-Link
+          Talk-A-Tive
         </Text>
         <div style={{ display: "flex" }}>
           <Menu>
